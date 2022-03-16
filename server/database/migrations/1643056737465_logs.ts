@@ -6,8 +6,6 @@ export default class Logs extends BaseSchema {
   public async up () {
     this.schema.createTable(this.tableName, (table) => {
       table.bigIncrements('id')
-      table.integer('project_id').unsigned()
-        table.foreign('project_id').references('projects.id').onUpdate('CASCADE').onDelete('CASCADE')
       table.integer('user_id').unsigned()
         table.foreign('user_id').references('users.id').onUpdate('CASCADE').onDelete('RESTRICT')
       table.string('route').notNullable().defaultTo('')

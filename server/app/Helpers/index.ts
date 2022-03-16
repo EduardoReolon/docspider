@@ -76,17 +76,20 @@ export default class Helpers {
       files.map(async file => {
         let random_name = await new Helpers().str_random(3)
         let filename = `${new Date().getTime()}-${random_name}.${file.subtype}`
-        // move o arquivo
-        await file.move(path, {
-          name: filename
-        })
-  
-        // verificamos se moveu mesmo
-        if (file.moved()) {
-          successes.push(file as never)
-        } else {
-          errors.push(file.error() as never)
-        }
+
+        if (file.isValid) {
+          // move o arquivo
+          await file.move(path, {
+            name: filename
+          })
+    
+          // verificamos se moveu mesmo
+          if (file.state === 'moved') {
+            successes.push(file as never)
+          } else {
+            errors.push(file.errors as never)
+          }
+        } else errors.push(file.errors as never);
       })
     )
   

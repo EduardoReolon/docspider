@@ -77,7 +77,7 @@
     main > h4{
       display: inline-block;
     }
-    main > h2{
+    .divFilesContent > h2{
       margin-left: 15px;
     }
     nav:hover + main{
@@ -102,11 +102,14 @@
       width: 100%;
       box-sizing: border-box;
     }
-    .divFileEdditing > img{
+    .divFileEdditing > a{
+      display: block;
+      cursor: pointer;
+    }
+    .divFileEdditing img{
       display: block;
       width: 50px;
       margin: auto;
-      cursor: pointer;
     }
     .divFileEdditing > div:last-of-type{
       text-align: center;
@@ -119,6 +122,26 @@
         margin-left: 0 !important;
         width: 100% !important;
       }
+    }
+    .divFileUpload{
+      padding: 3rem;
+      background-color: #f7fafc;
+      border-width: 1px;
+      border-color: #e2e8f0;
+    }
+    .divFileUpload > label{
+      display: block;
+      cursor: pointer;
+    }
+    .divFileUpload > label > input{
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
+      position: absolute;
+    }
+    .contentsGroups{
+      display: none;
     }
   </style>
 </head>
@@ -134,7 +157,7 @@
     </svg>
   </header>
   <nav>
-    <div>
+    <div onclick="hideAll();">
       <h4>Início</h4>
       <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
         <g id="Layer_1">
@@ -143,7 +166,7 @@
         </g>
       </svg>
     </div>
-    <div>
+    <div onclick="hideAll('files');">
       <h4>Meus Documentos</h4>
       <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
         <g id="Layer_1">
@@ -159,7 +182,7 @@
         </g>
       </svg>
     </div>
-    <div>
+    <div onclick="hideAll('about');">
       <h4>Sobre</h4>
       <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg">
         <g id="Layer_1">
@@ -176,12 +199,68 @@
   <main>
     <h4>Início</h4>
     <h4 id="h4Tree"></h4>
-    <h2>Meus Documentos</h2>
-    <button onclick="startEditFile()"
-    >Novo Documento</button>
-    <div class="divFileEdditing"></div>
-    <div class="divListDocs"></div>
-    <div class="divPagesDocs"></div>
+    <div class="divHomeContent contentsGroups" style="display: block;"></div>
+    <div class="divFilesContent contentsGroups">
+      <h2>Meus Documentos</h2>
+      <button onclick="startEditFile()"
+      >Novo Documento</button>
+      <div class="divFileEdditing"></div>
+      <div class="divListDocs"></div>
+      <div class="divPagesDocs"></div>
+    </div>
+    <div class="divAboutContent contentsGroups"></div>
   </main>
+
+  <script>
+    var page = 1;
+    var per_page = 20;
+    var last_page = 1;
+    var files = [];
+    let baseURL = `${window.location.protocol}//${window.location.host}/api`;
+
+    function hideAll(but) {
+      const divs = document.querySelectorAll('.contentsGroups');
+      for (let index = 0; index < divs.length; index++) {
+        divs[index].style.display = '';
+      }
+      switch (but) {
+        case 'files':
+          document.querySelector('.divFilesContent').style.display = 'block';
+          document.getElementById('h4Tree').innerText = '> Meus Documentos';
+          break; 
+        case 'about':
+          document.querySelector('.divAboutContent').style.display = 'block';
+          document.getElementById('h4Tree').innerText = '> Sobre';
+          break;     
+        default:
+          document.querySelector('.divHomeContent').style.display = 'block';
+          document.getElementById('h4Tree').innerText = '';
+          break;
+      }
+      if (but === 'home'){
+      }
+    }
+
+    function httpRequest(verb, urlEnd, request, callback, callbackError) {
+      let xhttp = new XMLHttpRequest();
+  
+      // download da lista geral
+      xhttp.open(verb, `${baseURL}/${urlEnd || ''}`, true);
+
+      // headers
+      if (localStorage.getItem('user')) {
+        const user = JSON.parse(localStorage.getItem('user'));
+        xhttp.setRequestHeader('Authorization', `Bearer ${user.token}`)
+      }
+
+      xhttp.onreadystatechange = function(){
+        if ( xhttp.readyState == 4 && [200, 201].indexOf(xhttp.status) >= 0 ) {
+          if (callback) callback(xhttp);
+        } else if (callbackError) callbackError(xhttp);
+      }
+      xhttp.send(request || null);
+    }
+    requestPage();
+  </script>
 </body>
 </html>

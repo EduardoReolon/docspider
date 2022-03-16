@@ -19,13 +19,10 @@
 */
 
 import Route from '@ioc:Adonis/Core/Route'
-
-//back door
-Route.group(() => {
-  Route.post('', 'BackDoorsController.')
-})
-  .prefix('api/v1/backdoor')
-  .middleware(['backDoor'])
+import Application from '@ioc:Adonis/Core/Application';
+const appRoot = Application.appRoot.endsWith('build')
+  ? Application.appRoot.replace(/build([^build]*)$/, '$1')
+  : `${Application.appRoot}/`;
 
 // auth
 Route.group(() => {
@@ -46,14 +43,22 @@ Route.group(() => {
 })
   .prefix('api/v1/auth')
 
-// reports
+// files
 Route.group(() => {
-  Route.post('new', 'ReportsController.store')
-    .middleware(['getProject', 'getCredential', 'newLog'])
+  Route.get('', 'FilesController.index')
+  Route.post(':id', 'FilesController.update')
+    // .middleware(['newLog'])
 })
-  .prefix('api/v1/report')
-  .middleware(['auth'])
+  .prefix('api/v1/files')
+  // .middleware(['auth'])
 
-Route.get('/', async () => {
-  return { hello: 'world' }
+Route.get('*', async ({ params, response }) => {
+  if (params['*']) {
+    const index = params['*'].findIndex((p) => ['icons', 'css', 'js'].includes(p));
+    if (index > -1) {
+      params['*'].splice(0, index);
+      return response.download(`${appRoot}public/${params['*'].join('/')}`)
+    }
+  }
+  return response.download(`${appRoot}public/index.html`)
 })
