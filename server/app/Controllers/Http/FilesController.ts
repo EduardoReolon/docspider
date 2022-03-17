@@ -14,7 +14,7 @@ export default class FilesController {
     } catch (error) {
       console.error('files index', error);
       return response.status(400).send({
-        message: 'Error registering'
+        msg: 'Erro recuperando registros'
       })
     }
   }
@@ -66,7 +66,7 @@ export default class FilesController {
     } catch (error) {
       console.error('files update', error);
       return response.status(400).send({
-        message: 'Error registering'
+        msg: 'Erro salvando registro'
       })
     }
   }
