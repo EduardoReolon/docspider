@@ -24,6 +24,15 @@ const appRoot = Application.appRoot.endsWith('build')
   ? Application.appRoot.replace(/build([^build]*)$/, '$1')
   : `${Application.appRoot}/`;
 
+Route.get('storage/:folder1/:file', async ({ params: { folder1, file }, response }) => {
+  const path = `${appRoot}storage/${folder1}`;
+  response.download(`${path}/${file}`);
+})
+Route.get('storage/:file', async ({ params: { file }, response }) => {
+  const path = `${appRoot}storage`;
+  response.download(`${path}/${file}`);
+})
+
 // auth
 Route.group(() => {
   Route.post('register', 'AuthController.register')

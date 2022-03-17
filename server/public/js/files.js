@@ -1,4 +1,45 @@
-function requestPage(pageR = 1) {
+function convertDates(value, toString = false, formatFrom = '', formatTo = '') {
+  try {
+    // format quando = '' significa: 01, 2019
+    let valueDate;
+    if (typeof value === 'string') {
+      switch (formatFrom) {
+        case 'short':
+          valueDate = new Date(parseInt(value.split('-')[0], 0), parseInt(value.split('-')[1], 0) - 1, parseInt(value.split('-')[2], 0));
+          break;
+        case 'short br':
+          valueDate = new Date(parseInt(value.split('/')[2], 0), parseInt(value.split('/')[1], 0) - 1, parseInt(value.split('/')[0], 0));
+          break;
+        case 'iso':
+          valueDate = new Date(value);
+          break;
+        default:
+          valueDate = new Date(parseInt(value.split(', ')[1], 0), parseInt(value.split(', ')[0], 0) - 1, 1);
+          break;
+      }
+    } else valueDate = value;
+    if (toString) {
+      let hours = '';
+      switch (formatTo.split(' ')[0]) {
+        case 'long':
+          hours = ` ${valueDate.getHours().toString().padStart(2, '0')}:${valueDate.getMinutes().toString().padStart(2, '0')}`;
+          /* eslint-disable */
+        case 'short':
+          /* eslint-enable */
+          if (formatTo.includes('br')) {
+            return `${valueDate.getDate().toString().padStart(2, '0')}/${(valueDate.getMonth() + 1).toString().padStart(2, '0')}/${valueDate.getFullYear()}${hours}`;
+          }
+          return `${valueDate.getFullYear()}-${(valueDate.getMonth() + 1).toString().padStart(2, '0')}-${valueDate.getDate().toString().padStart(2, '0')}${hours}`;
+        default:
+          return `${(valueDate.getMonth() + 1).toString().padStart(2, '0')}, ${valueDate.getFullYear()}`;
+      }
+    } else return valueDate;
+  } catch (error) {
+    return value;
+  }
+};
+
+function requestPage(pageR = page) {
   httpRequest('get', `v1/files?page=${pageR}&per_page=20`, undefined, (xhttp) => {
     // exibe o erro para o usuário
     page = pageR;
@@ -7,14 +48,64 @@ function requestPage(pageR = 1) {
     files = response.data || [];
 
     // prepara a visualização da lista de arquivos e dos números das páginas
-    const divList = document.getElementById('divListDocs');
+    const divList = document.querySelector('.divListDocs');
+    divList.innerHTML = '';
+    files.forEach((file) => {
+      const divFile = document.createElement('div');
+      const divAtributes = document.createElement('div');
+      function newField(field, slug) {
+        const label = document.createElement('label');
+        label.innerText = `${slug}:`;
+        const h4 = document.createElement('h4');
+        if (field === 'created_at') {
+          h4.innerText = convertDates(file[field] || '2000-01-01 DMT-03:00', true, 'iso', 'long br');
+        } else h4.innerText = file[field] || '';
+        label.appendChild(h4);
+        divAtributes.appendChild(label);
+      };
+      newField('title', 'Título');
+      newField('description', 'Descrição');
+      newField('client_name', 'Arquivo');
+      newField('created_at', 'Criado em');
+
+      divAtributes.addEventListener('click', () => {
+        startEditFile(file);
+      })
+
+      divFile.appendChild(divAtributes);
+
+      // link para baixar os arquivo
+      const a = document.createElement('a');
+      a.target = '_blank';
+      const img = document.createElement('img');
+      img.src = './icons/download.svg';
+      if (file.file_name) {
+        a.href = `/storage/${file.file_name}`;
+      } else img.style.opacity = 0.2;
+      a.download = file.client_name;
+      a.appendChild(img);
+      divFile.appendChild(a);
+
+      divList.appendChild(divFile);
+    })
+
+    // prepara a visuação das páginas
+    const divPages = document.querySelector('.divPagesDocs');
+    divPages.innerHTML = '';
+    for (let currentPage = 1; currentPage <= last_page; currentPage++) {
+      const h4Page = document.createElement('h4');
+      h4Page.innerText = currentPage;
+      if (page === currentPage) h4Page.classList.add('currentPage');
+      h4Page.addEventListener('click', () => requestPage(currentPage));
+      divPages.appendChild(h4Page);
+    }
   });
 }
 
 function startEditFile(file = {}) {
   /**
    * file:
-   * id, title, description, fileName, clientName, size, created_at, updated_at
+   * id, title, description, file_name, client_name, size, created_at, updated_at
    */
   const div = document.querySelector('.divFileEdditing');
   if (div) {
@@ -22,29 +113,33 @@ function startEditFile(file = {}) {
     div.innerHTML = '';
     div.id = file.id || -1;
     const inputs = {};
-    const newInput = (field, visual) => {
+    const newInput = (field, slug) => {
       const label = document.createElement('label');
-      label.innerText = visual;
+      label.innerText = slug;
       inputs[field] = document.createElement('input');
       inputs[field].name = field;
-      inputs[field].value = file[field] || '';
+      if (field === 'created_at') {
+        inputs[field].value = convertDates(file[field] || '2000-01-01 DMT-03:00', true, 'iso', 'long br');
+        inputs[field].disabled = true;
+      } else inputs[field].value = file[field] || '';
       label.appendChild(inputs[field]);
       div.appendChild(label);
     }
     newInput('title', 'Título');
     newInput('description', 'Descrição');
-    newInput('clientName', 'Nome do arquivo');
+    newInput('client_name', 'Nome do arquivo');
+    if (file.created_at) newInput('created_at', 'Criado em');
 
     // link para baixar os arquivo
     const a = document.createElement('a');
     a.target = '_blank';
     const img = document.createElement('img');
     img.src = './icons/download.svg';
-    if (file.fileName) {
-      a.href = `/storage/${file.fileName}`;
+    if (file.file_name) {
+      a.href = `/storage/${file.file_name}`;
     } else img.style.opacity = 0.2;
-    a.download = inputs['clientName'].value;
-    inputs['clientName'].addEventListener('change', (event) => {
+    a.download = inputs['client_name'].value;
+    inputs['client_name'].addEventListener('change', (event) => {
       a.download = event.target.value;
     })
     a.appendChild(img);
@@ -66,7 +161,7 @@ function startEditFile(file = {}) {
           if (extensionsBlock.includes(extension)) return false;
 
           fileUploaded = file;
-          inputs['clientName'].value = file.name;
+          inputs['client_name'].value = file.name;
           a.download = file.name;
           a.href = window.URL.createObjectURL(file);
           img.style.opacity = 1;
@@ -107,7 +202,7 @@ function startEditFile(file = {}) {
     btnSave.innerText = 'Salvar';
     btnSave.addEventListener('click', () => {
       const formData = new FormData();
-      ['title', 'description', 'clientName'].forEach((field) => {
+      ['title', 'description', 'client_name'].forEach((field) => {
         formData.append(field, inputs[field].value);
       })
       if (fileUploaded) {
@@ -118,6 +213,7 @@ function startEditFile(file = {}) {
         // console.log(JSON.parse(xhttp.response || '{}'));
       });
       cleanUpdate();
+      requestPage();
     });
     divButtons.appendChild(btnSave);
 

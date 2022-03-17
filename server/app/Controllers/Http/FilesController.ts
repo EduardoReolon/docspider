@@ -7,7 +7,9 @@ export default class FilesController {
       let {page, per_page} = request.all();
       page = parseInt(page) || 1;
       per_page = parseInt(per_page) || 20;
-      const files = await File.query().paginate(page, per_page);
+      const files = await File.query()
+        .orderBy('title')
+        .paginate(page, per_page);
       return response.status(201).send(files);
     } catch (error) {
       console.error('files index', error);
@@ -19,7 +21,8 @@ export default class FilesController {
 
   public async update({ params: {id}, request, response }) {
     try {
-      const {title, description, clientName} = request.all();
+      const {title, description, client_name} = request.all();
+      const clientName = client_name;
       const path = 'storage';
       const helpers = new Helpers();
 
@@ -41,7 +44,7 @@ export default class FilesController {
       }
 
       const fileJar = request.files('files', {
-        extnames: ['png', 'jpeg', 'jpg', 'pdf'],
+        // extnames: ['png', 'jpeg', 'jpg', 'pdf'],
         size: '20mb'
       })
       let filesSaved: {successes: {type: Number, clientName: String, fileName: String, size: Number}[], errors: {}[]} = {successes: [], errors: []};
